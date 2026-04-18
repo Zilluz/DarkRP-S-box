@@ -97,19 +97,63 @@
                                         </div>
                                     </div>
 
-                                    <div class="dashboard-right menuinner">
-                                        <h1>Quick Access</h1>
+                                    <div class="dashboard-right menuinner city-laws-panel">
+                                        <h1>City Laws</h1>
+                                        <label class="laws-description">Public laws posted by the mayor and mirrored on every lawboard.</label>
 
-                                        @foreach ( var action in QuickActions )
+                                        <div class="laws-list">
+                                        @if ( CityLaws.Count == 0 )
                                         {
-                                            <div class="action-row">
-                                                <div class="action-copy">
-                                                    <label class="action-title">@action.Title</label>
-                                                    <label class="action-description">@action.Description</label>
-                                                </div>
-
-                                                <label class="placeholder-tag">Placeholder</label>
+                                            <div class="law-empty">
+                                                <label>No city laws posted.</label>
                                             </div>
+                                        }
+                                        else
+                                        {
+                                            @for ( var i = 0; i < CityLaws.Count; i++ )
+                                            {
+                                                var lawIndex = i;
+                                                var law = CityLaws[i];
+
+                                                <div class="law-row">
+                                                    <label class="law-number">@(i + 1)</label>
+                                                    <label class="law-text">@law</label>
+
+                                                    @if ( CanManageCityLaws )
+                                                    {
+                                                        <Button Text="Remove"
+                                                                Icon="delete"
+                                                                class="menu-action law-remove"
+                                                                @onclick="@(() => RemoveCityLaw( lawIndex ))" />
+                                                    }
+                                                </div>
+                                            }
+                                        }
+                                        </div>
+
+                                        @if ( CanManageCityLaws )
+                                        {
+                                            <div class="law-editor">
+                                                <label class="law-editor-label">Add City Law</label>
+                                                <div class="law-editor-controls">
+                                                    <TabTextEntry @ref="LawEntry"
+                                                                  class="menu-input law-input"
+                                                                  Placeholder="New city law"
+                                                                  Value:bind=@_cityLawValue
+                                                                  OnTabPressed="@CloseFromLawEntry"
+                                                                  @onsubmit="@SubmitCityLaw" />
+                                                    <Button Text="Add"
+                                                            Icon="gavel"
+                                                            class="menu-action primary"
+                                                            Disabled="@(!CanSubmitCityLaw)"
+                                                            @onclick="@SubmitCityLaw" />
+                                                </div>
+                                                <label class="law-limit">@CityLawTextLength / @CityLawManager.MaxLawLength</label>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <label class="law-hint">Only the Mayor can change city laws.</label>
                                         }
                                     </div>
                                 </div>
@@ -268,6 +312,10 @@
                                                     @if ( string.Equals( item.MiscPrefabPath, TipJar.PrefabPath, StringComparison.OrdinalIgnoreCase ) )
                                                     {
                                                         <label class="shop-meta-item">Owned: @TipJar.CountOwned( Connection.Local ) / @TipJar.MaxOwnedPerPlayer</label>
+                                                    }
+                                                    else if ( string.Equals( item.MiscPrefabPath, Lawboard.PrefabPath, StringComparison.OrdinalIgnoreCase ) )
+                                                    {
+                                                        <label class="shop-meta-item">Owned: @Lawboard.CountOwned( Connection.Local ) / @Lawboard.MaxOwnedPerPlayer</label>
                                                     }
 
                                                     <Button Text="Buy"
@@ -443,18 +491,6 @@
         public string Title { get; }
     }
 
-    sealed class QuickAction
-    {
-        public QuickAction( string title, string description )
-        {
-            Title = title;
-            Description = description;
-        }
-
-        public string Title { get; }
-        public string Description { get; }
-    }
-
     sealed class ShopSection
     {
         public ShopSection( string title, string description, ShopItem[] items )
@@ -504,25 +540,19 @@
         public int ShipmentCount { get; }
     }
 
-    static readonly QuickAction[] QuickActions =
-    {
-        new QuickAction( "Change Job", "Use the Jobs tab to switch roles, uniforms, and starting gear." ),
-        new QuickAction( "Open Shop", "Use the Shop tab to buy printers, weapons, and shipments." ),
-        new QuickAction( "Request License", "Reserved slot for mayor and police interactions." ),
-        new QuickAction( "View Laws", "Reserved slot for city laws and server rules." )
-    };
-
-    ScoreboardPage _currentPage = ScoreboardPage.Players;
+    ScoreboardPage _currentPage = ScoreboardPage.Dashboard;
     ScoreboardPage? _hoveredPage;
     string _mapTitle = null;
     string _selectedShopSection = "Printers";
     string _dropMoneyValue = "";
     string _roleplayNameValue = "";
+    string _cityLawValue = "";
     string _adminSteamIdValue = "";
     bool _isOpen;
     static Panel _currentMenuOverlay;
     MoneyDropEntry DropMoneyEntry = default;
     TabTextEntry RoleplayNameEntry = default;
+    TabTextEntry LawEntry = default;
     TabTextEntry AdminSteamIdEntry = default;
     Panel MenuOverlay = default;
     int PlayerCount => Scene.GetAll<PlayerData>().Count();
@@ -533,6 +563,10 @@
     string LocalPlayerJob => string.IsNullOrWhiteSpace( LocalPlayer?.JobTitle ) ? "Citizen" : LocalPlayer.JobTitle;
     bool CanDropMoney => TryGetDropMoneyAmount( out var amount ) && LocalPlayer?.CanAfford( amount ) == true;
     bool CanSubmitRoleplayName => TryGetRoleplayName( out var roleplayName ) && !string.Equals( LocalPlayerName, roleplayName, StringComparison.Ordinal );
+    IReadOnlyList<string> CityLaws => CityLawManager.Current?.Laws ?? Array.Empty<string>();
+    bool CanManageCityLaws => LocalPlayer?.IsMayor == true;
+    bool CanSubmitCityLaw => CanManageCityLaws && TryGetCityLawText( out _ ) && CityLaws.Count < CityLawManager.MaxLaws;
+    int CityLawTextLength => Math.Min( (_cityLawValue ?? string.Empty).Trim().Length, CityLawManager.MaxLawLength );
     bool CanAccessAdministration => LocalPlayer?.HasAdminAccess == true;
     bool CanManageAdminRoles => LocalPlayer?.HasSuperAdminAccess == true;
     bool CanSubmitAdminSteamId => TryGetAdminSteamId( out _ );
@@ -743,7 +777,9 @@
             && LocalPlayer?.CanAfford( item.Price ) == true
             && MiscShopCatalog.CanPlayerBuy( LocalPlayer, item.MiscPrefabPath, out _ )
             && (!string.Equals( item.MiscPrefabPath, TipJar.PrefabPath, StringComparison.OrdinalIgnoreCase )
-                || TipJar.CountOwned( Connection.Local ) < TipJar.MaxOwnedPerPlayer);
+                || TipJar.CountOwned( Connection.Local ) < TipJar.MaxOwnedPerPlayer)
+            && (!string.Equals( item.MiscPrefabPath, Lawboard.PrefabPath, StringComparison.OrdinalIgnoreCase )
+                || Lawboard.CountOwned( Connection.Local ) < Lawboard.MaxOwnedPerPlayer);
     }
 
     string GetPrinterRateText( ShopItem item )
@@ -938,6 +974,17 @@
         return !string.IsNullOrWhiteSpace( roleplayName );
     }
 
+    bool TryGetCityLawText( out string lawText )
+    {
+        lawText = string.Join( " ", (_cityLawValue ?? string.Empty).Trim().Split( ' ', StringSplitOptions.RemoveEmptyEntries ) );
+        if ( lawText.Length > CityLawManager.MaxLawLength )
+        {
+            lawText = lawText[..CityLawManager.MaxLawLength].Trim();
+        }
+
+        return !string.IsNullOrWhiteSpace( lawText );
+    }
+
     bool TryGetAdminSteamId( out long steamId )
     {
         steamId = 0;
@@ -964,6 +1011,24 @@
         RoleplayNameEntry?.Blur();
     }
 
+    void SubmitCityLaw()
+    {
+        if ( !CanManageCityLaws || !TryGetCityLawText( out var lawText ) )
+            return;
+
+        CityLawManager.Current?.RequestAddLaw( lawText );
+        _cityLawValue = "";
+        LawEntry?.Blur();
+    }
+
+    void RemoveCityLaw( int index )
+    {
+        if ( !CanManageCityLaws )
+            return;
+
+        CityLawManager.Current?.RequestRemoveLaw( index );
+    }
+
     void SubmitAdminRole( AdminRole role )
     {
         if ( !TryGetAdminSteamId( out var steamId ) )
@@ -985,6 +1050,7 @@
         {
             DropMoneyEntry?.Blur();
             RoleplayNameEntry?.Blur();
+            LawEntry?.Blur();
             AdminSteamIdEntry?.Blur();
         }
     }
@@ -995,6 +1061,11 @@
     }
 
     void CloseFromRoleplayNameEntry()
+    {
+        SetOpen( false );
+    }
+
+    void CloseFromLawEntry()
     {
         SetOpen( false );
     }
@@ -1030,6 +1101,7 @@
         Panel.AcceptsFocus = false;
         var dropMoneyHasFocus = DropMoneyEntry?.HasFocus ?? false;
         var roleplayNameHasFocus = RoleplayNameEntry?.HasFocus ?? false;
+        var lawEntryHasFocus = LawEntry?.HasFocus ?? false;
         var adminSteamIdHasFocus = AdminSteamIdEntry?.HasFocus ?? false;
 
         var host = Game.ActiveScene.Get<SpawnMenuHost>();
@@ -1044,7 +1116,7 @@
             _currentPage = ScoreboardPage.Players;
         }
 
-        if ( (Input.Pressed( "Score" ) || Input.Keyboard.Pressed( "Tab" )) && !dropMoneyHasFocus && !roleplayNameHasFocus && !adminSteamIdHasFocus )
+        if ( (Input.Pressed( "Score" ) || Input.Keyboard.Pressed( "Tab" )) && !dropMoneyHasFocus && !roleplayNameHasFocus && !lawEntryHasFocus && !adminSteamIdHasFocus )
         {
             SetOpen( !_isOpen );
         }
@@ -1072,6 +1144,12 @@
                 hash.Add( SessionType );
                 hash.Add( _dropMoneyValue );
                 hash.Add( _roleplayNameValue );
+                hash.Add( _cityLawValue );
+                hash.Add( CanManageCityLaws );
+                hash.Add( CityLawManager.Current?.Revision ?? 0 );
+
+                foreach ( var law in CityLaws )
+                    hash.Add( law );
                 break;
 
             case ScoreboardPage.Players:
@@ -1106,6 +1184,7 @@
                 hash.Add( LocalPlayer?.JobDefinitionPath );
                 hash.Add( LocalOwnedPrinterCount );
                 hash.Add( TipJar.CountOwned( Connection.Local ) );
+                hash.Add( Lawboard.CountOwned( Connection.Local ) );
                 hash.Add( PrinterDefinitions.Count );
 
                 foreach ( var definition in PrinterDefinitions )

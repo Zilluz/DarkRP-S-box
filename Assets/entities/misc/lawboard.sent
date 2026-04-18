@@ -1,0 +1,9 @@
+{
+  "Prefab": "entities/misc/lawboard.prefab",
+  "Title": "Lawboard",
+  "Description": "A public board that displays the mayor's city laws.",
+  "Category": "Miscellaneous",
+  "IncludeCode": false,
+  "__references": [],
+  "__version": 0
+}

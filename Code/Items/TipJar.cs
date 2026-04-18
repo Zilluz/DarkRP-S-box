@@ -219,6 +219,23 @@ public sealed class TipJar : Component, Component.IPressable
 			.Count( x => x.IsValid() && x.GameObject.GetComponent<Ownable>()?.Owner == owner );
 	}
 
+	public static int DestroyOwned( Connection owner )
+	{
+		if ( !Networking.IsHost || owner is null || Game.ActiveScene is null )
+			return 0;
+
+		var ownedTipJars = Game.ActiveScene.GetAllComponents<TipJar>()
+			.Where( x => x.IsValid() && x.GameObject.GetComponent<Ownable>()?.Owner == owner )
+			.ToArray();
+
+		foreach ( var tipJar in ownedTipJars )
+		{
+			tipJar.GameObject.Destroy();
+		}
+
+		return ownedTipJars.Length;
+	}
+
 	public static bool TrySpawn( Player owner )
 	{
 		if ( !Networking.IsHost || !owner.IsValid() )

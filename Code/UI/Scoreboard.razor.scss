@@ -260,6 +260,97 @@ Scoreboard {
 		color: $menu-accent;
 	}
 
+	.city-laws-panel {
+		min-width: 0;
+	}
+
+	.laws-description,
+	.law-hint,
+	.law-limit {
+		font-size: 12px;
+		color: rgba( white, 0.65 );
+		white-space: normal;
+	}
+
+	.laws-list {
+		flex-direction: column;
+		gap: 6px;
+		flex-grow: 1;
+		min-height: 0;
+		overflow-y: scroll;
+	}
+
+	.law-row,
+	.law-empty {
+		width: 100%;
+		padding: 8px;
+		gap: 8px;
+		align-items: flex-start;
+		border-radius: 4px;
+		background-color: #53698111;
+	}
+
+	.law-empty {
+		align-items: center;
+		color: rgba( white, 0.65 );
+	}
+
+	.law-number {
+		width: 26px;
+		height: 26px;
+		flex-shrink: 0;
+		padding: 0;
+		align-items: center;
+		justify-content: center;
+		border-radius: 4px;
+		font-weight: 800;
+		line-height: 26px;
+		text-align: center;
+		color: white;
+		background-color: rgba( $color-accent, 0.22 );
+	}
+
+	.law-text {
+		flex-grow: 1;
+		min-width: 0;
+		color: white;
+		font-size: 14px;
+		white-space: normal;
+	}
+
+	.law-remove {
+		flex-shrink: 0;
+		min-width: 96px;
+		justify-content: center;
+	}
+
+	.law-editor {
+		width: 100%;
+		margin-top: 8px;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.law-editor-label {
+		font-size: 12px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: $menu-text;
+	}
+
+	.law-editor-controls {
+		width: 100%;
+		flex-direction: row;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.law-input {
+		flex-grow: 1;
+		min-width: 0;
+	}
+
 	.money-drop-wrap {
 		width: 100%;
 		padding-top: 12px;

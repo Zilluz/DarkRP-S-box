@@ -1,28 +1,32 @@
 public sealed class MiscShopItemDefinition
 {
-	public MiscShopItemDefinition( string prefabPath, string title, int price, string description, bool hoboOnly = false )
+	public MiscShopItemDefinition( string prefabPath, string title, int price, string description, string requiredJobDefinitionPath = null, string requiredJobTitle = null )
 	{
 		PrefabPath = prefabPath;
 		Title = title;
 		Price = price;
 		Description = description;
-		HoboOnly = hoboOnly;
+		RequiredJobDefinitionPath = requiredJobDefinitionPath;
+		RequiredJobTitle = requiredJobTitle;
 	}
 
 	public string PrefabPath { get; }
 	public string Title { get; }
 	public int Price { get; }
 	public string Description { get; }
-	public bool HoboOnly { get; }
+	public string RequiredJobDefinitionPath { get; }
+	public string RequiredJobTitle { get; }
 }
 
 public static class MiscShopCatalog
 {
-	public const string HoboJobDefinitionPath = "jobs/hobo.jobdef";
+	public const string HoboJobDefinitionPath = Player.HoboJobDefinitionPath;
+	public const string MayorJobDefinitionPath = Player.MayorJobDefinitionPath;
 
 	static readonly MiscShopItemDefinition[] Items =
 	[
-		new( TipJar.PrefabPath, "Tip Jar", 150, "Place a jar so other players can donate money to you.", true )
+		new( TipJar.PrefabPath, "Tip Jar", 150, "Place a jar so other players can donate money to you.", HoboJobDefinitionPath, "Hobo" ),
+		new( Lawboard.PrefabPath, "Lawboard", 250, "Place a public board that mirrors the mayor's city laws.", MayorJobDefinitionPath, "Mayor" )
 	];
 
 	public static IReadOnlyList<MiscShopItemDefinition> GetAll()
@@ -43,7 +47,7 @@ public static class MiscShopCatalog
 		if ( item is null )
 			return false;
 
-		return !item.HoboOnly || IsHobo( player );
+		return MeetsJobRequirement( player, item );
 	}
 
 	public static bool CanPlayerBuy( Player player, string prefabPath, out string reason )
@@ -57,36 +61,35 @@ public static class MiscShopCatalog
 			return false;
 		}
 
-		if ( !item.HoboOnly )
+		if ( MeetsJobRequirement( player, item ) )
 			return true;
 
-		if ( player is null )
+		if ( string.IsNullOrWhiteSpace( item.RequiredJobTitle ) )
 		{
 			reason = "Player unavailable.";
 			return false;
 		}
 
-		if ( !IsHobo( player ) )
-		{
-			reason = "Hobo only.";
-			return false;
-		}
-
-		return true;
+		reason = $"{item.RequiredJobTitle} only.";
+		return false;
 	}
 
-	public static bool IsHobo( Player player )
+	static bool MeetsJobRequirement( Player player, MiscShopItemDefinition item )
 	{
+		if ( item is null )
+			return false;
+
+		if ( string.IsNullOrWhiteSpace( item.RequiredJobDefinitionPath ) )
+			return true;
+
 		var job = player?.CurrentJobDefinition;
 		if ( job is null )
 			return false;
 
-		if ( string.Equals( job.ResourcePath, HoboJobDefinitionPath, StringComparison.OrdinalIgnoreCase ) )
+		if ( string.Equals( job.ResourcePath, item.RequiredJobDefinitionPath, StringComparison.OrdinalIgnoreCase ) )
 			return true;
 
-		if ( string.Equals( job.Command, "/hobo", StringComparison.OrdinalIgnoreCase ) )
-			return true;
-
-		return string.Equals( job.Title, "Hobo", StringComparison.OrdinalIgnoreCase );
+		return !string.IsNullOrWhiteSpace( item.RequiredJobTitle )
+			&& string.Equals( job.Title, item.RequiredJobTitle, StringComparison.OrdinalIgnoreCase );
 	}
 }

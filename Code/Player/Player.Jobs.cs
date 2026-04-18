@@ -3,6 +3,7 @@ using Sandbox.UI;
 public sealed partial class Player
 {
 	public const string ThiefJobDefinitionPath = "jobs/thief.jobdef";
+	public const string HoboJobDefinitionPath = "jobs/hobo.jobdef";
 	const float JobChangeCooldownSeconds = 60.0f;
 
 	const string PrisonerJumpsuitClothingPath = "models/citizen_clothes/shirt/jumpsuit/prison_jumpsuit.clothing";
@@ -30,10 +31,34 @@ public sealed partial class Player
 		if ( !Networking.IsHost || definition is null )
 			return;
 
+		CleanupPreviousJobItems( JobDefinitionPath, definition.ResourcePath );
+
 		JobDefinitionPath = definition.ResourcePath;
 		SetJobTitle( definition.Title );
 		PlayerData?.SetJob( definition.ResourcePath, definition.Title );
 		SaveRoleplayData();
+	}
+
+	void CleanupPreviousJobItems( string oldJobDefinitionPath, string newJobDefinitionPath )
+	{
+		if ( string.Equals( oldJobDefinitionPath, newJobDefinitionPath, StringComparison.OrdinalIgnoreCase ) )
+			return;
+
+		if ( Network.Owner is not { } owner )
+			return;
+
+		if ( string.Equals( oldJobDefinitionPath, MayorJobDefinitionPath, StringComparison.OrdinalIgnoreCase )
+			&& !string.Equals( newJobDefinitionPath, MayorJobDefinitionPath, StringComparison.OrdinalIgnoreCase ) )
+		{
+			Lawboard.DestroyOwned( owner );
+			CityLawManager.Current?.ClearLaws();
+		}
+
+		if ( string.Equals( oldJobDefinitionPath, HoboJobDefinitionPath, StringComparison.OrdinalIgnoreCase )
+			&& !string.Equals( newJobDefinitionPath, HoboJobDefinitionPath, StringComparison.OrdinalIgnoreCase ) )
+		{
+			TipJar.DestroyOwned( owner );
+		}
 	}
 
 	public void EnsureValidJobDefinition()

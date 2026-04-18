@@ -12,6 +12,8 @@ public sealed partial class GameManager : GameObjectSystem<GameManager>, Compone
 		{
 			Networking.CreateLobby( new Sandbox.Network.LobbyConfig() { Privacy = Sandbox.Network.LobbyPrivacy.Public, MaxPlayers = 32, Name = "Sandbox", DestroyWhenHostLeaves = true } );
 		}
+
+		CityLawManager.Ensure( Scene );
 	}
 
 	void Component.INetworkListener.OnActive( Connection channel )
@@ -96,6 +98,8 @@ public sealed partial class GameManager : GameObjectSystem<GameManager>, Compone
 	void ISaveEvents.AfterLoad( string filename )
 	{
 		if ( !Networking.IsHost ) return;
+
+		CityLawManager.Ensure( Scene );
 
 		// Make sure we spawn any players that weren't included in the loaded save
 		foreach ( var connection in Connection.All )
