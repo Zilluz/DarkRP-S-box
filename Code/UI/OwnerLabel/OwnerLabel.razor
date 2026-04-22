@@ -11,12 +11,14 @@
 
 @code
 {
-	string _ownerName;
+    string _ownerName;
+
+    Player Player => Player.FindLocalPlayer();
 
 	protected override void OnUpdate()
 	{
 		var camera = Scene.Camera;
-		if ( camera is null )
+        if (camera is null || (Player.IsValid() && Player.WantsHideHud) )
 		{
 			Panel.SetClass( "visible", false );
 			return;
