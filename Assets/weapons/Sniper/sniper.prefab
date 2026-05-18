@@ -98,8 +98,8 @@
         "PrimaryFireRate": 1.2,
         "ReloadTime": 2.5,
         "ReserveAmmo": 0,
-        "ScopedFov": 20,
-        "ScopeSensitivity": 0.3,
+        "ScopedFov": 10,
+        "ScopeSensitivity": 0.15,
         "SecondaryInput": {
           "IsEnabled": false,
           "Action": null

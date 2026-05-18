@@ -79,6 +79,8 @@
         "__guid": "a1b2c3d4-2228-4aaa-b228-222222222228",
         "__enabled": true,
         "Flags": 0,
+        "LowerAmount": 1.5,
+        "LowerSpeed": 4,
         "OnComponentDestroy": null,
         "OnComponentDisabled": null,
         "OnComponentEnabled": null,
