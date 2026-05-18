@@ -102,15 +102,23 @@ PS
 		float prevLineY = bandTop + bandHeight * ( 1.0 - prevVal );
 
 		float thickness = 0.012;
+		float yAA = max( fwidth( uv.y ), 1e-5 );
 
 		// Horizontal segment at current value
-		float hLine = step( abs( uv.y - lineY ), thickness );
+		float hLine = smoothstep( thickness + yAA, thickness - yAA, abs( uv.y - lineY ) );
 
 		// Fill between previous and current value (vertical connector)
 		float minY = min( prevLineY, lineY );
 		float maxY = max( prevLineY, lineY );
 		float localX = frac( uv.x * sampleCount );
-		float vLine = step( localX, 0.12 ) * step( minY - thickness, uv.y ) * step( uv.y, maxY + thickness );
+
+		float xAA = max( fwidth( uv.x * sampleCount ), 1e-5 );
+		float xMask = smoothstep( -xAA, xAA, localX ) * ( 1.0 - smoothstep( 0.12 - xAA, 0.12 + xAA, localX ) );
+
+		float yMin = minY - thickness;
+		float yMax = maxY + thickness;
+		float yMask = smoothstep( yMin - yAA, yMin + yAA, uv.y ) * ( 1.0 - smoothstep( yMax - yAA, yMax + yAA, uv.y ) );
+		float vLine = xMask * yMask;
 
 		return max( hLine, vLine );
 	}
