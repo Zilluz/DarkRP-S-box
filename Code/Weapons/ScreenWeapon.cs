@@ -89,7 +89,7 @@ public partial class ScreenWeapon : BaseCarryable
 		var index = modelRenderer.Model.Materials.IndexOf( oldMaterial );
 		if ( index < 0 ) return;
 
-		_screenTexture ??= Texture.CreateRenderTarget().WithSize( ScreenTextureSize.x, ScreenTextureSize.y ).WithInitialColor( Color.Red ).WithMips()
+		_screenTexture ??= Texture.CreateRenderTarget().WithSize( ScreenTextureSize.x, ScreenTextureSize.y ).WithInitialColor( Color.Red )
 			.Create();
 		_screenTexture.Clear( Color.Random );
 
@@ -115,7 +115,6 @@ public partial class ScreenWeapon : BaseCarryable
 		DrawScreenContent( new Rect( 0, _screenTexture.Size ), cl.Paint );
 
 		cl.ClearRenderTarget();
-		cl.GenerateMipMaps( rt );
 	}
 
 	/// <summary>
